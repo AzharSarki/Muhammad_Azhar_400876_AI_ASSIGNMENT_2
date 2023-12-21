@@ -1,0 +1,117 @@
+import heapq
+from typing import List, Tuple
+
+N = 3
+
+class Node:
+    def __init__(self, mat, x, y, newX, newY, level, parent):
+        self.mat = [row[:] for row in mat]
+        self.x = x
+        self.y = y
+        self.newX = newX
+        self.newY = newY
+        self.level = level
+        self.parent = parent
+        self.cost = float('inf')
+
+def show_puzzle(mat):
+    for i in range(N):
+        for j in range(N):
+            print(mat[i][j], end=" ")
+        print()
+
+def new_node(mat, x, y, newX, newY, level, parent):
+    node = Node(mat, x, y, newX, newY, level, parent)
+    temp = node.mat[x][y]
+    node.mat[x][y] = node.mat[newX][newY]
+    node.mat[newX][newY] = temp
+    return node
+
+def cost_calculation(mat, final):
+    count = 0
+    for i in range(N):
+        for j in range(N):
+            if mat[i][j] != final[i][j]:
+                count += 1
+    return count
+
+def check_limit(x, y):
+    return 0 <= x < N and 0 <= y < N
+
+def display_puzzle(root):
+    if root is None:
+        return
+    display_puzzle(root.parent)
+    show_puzzle(root.mat)
+    print()
+
+class PriorityQueue:
+    def __init__(self):
+        self.heap = []
+
+    def push(self, item):
+        heapq.heappush(self.heap, item)
+
+    def pop(self):
+        return heapq.heappop(self.heap)
+
+    def empty(self):
+        return len(self.heap) == 0
+
+class Solver:
+    def __init__(self, initial, x, y, final):
+        self.initial = initial
+        self.x = x
+        self.y = y
+        self.final = final
+
+    def solve(self):
+        pq = PriorityQueue()
+
+        visited = set()
+
+        root = new_node(self.initial, self.x, self.y, self.x, self.y, 0, None)
+        root.cost = cost_calculation(self.initial, self.final)
+        pq.push((root.cost + root.level, root))
+
+        while not pq.empty():
+            _, current = pq.pop()
+
+            if current.cost == 0:
+                display_puzzle(current)
+                return
+
+            for i in range(4):
+                if check_limit(current.x + row[i], current.y + col[i]):
+                    child = new_node(
+                        current.mat,
+                        current.x,
+                        current.y,
+                        current.x + row[i],
+                        current.y + col[i],
+                        current.level + 1,
+                        current,
+                    )
+                    child.cost = cost_calculation(child.mat, self.final)
+
+                    if tuple(map(tuple, child.mat)) not in visited:
+                        visited.add(tuple(map(tuple, child.mat)))
+                        pq.push((child.cost + child.level, child))
+
+if __name__ == "__main__":
+    initial = [
+        [1, 2, 3],
+        [0, 6, 5],
+        [7, 8, 4]
+    ]
+
+    final = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8]
+    ]
+
+    x, y = 1, 0
+
+    solver = Solver(initial, x, y, final)
+    solver.solve()
