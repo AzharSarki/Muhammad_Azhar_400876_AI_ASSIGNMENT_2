@@ -1,0 +1,118 @@
+import heapq
+from typing import List, Tuple
+
+N = 3
+
+steps = 0
+row = [1, 0, -1, 0]
+col = [0, -1, 0, 1]
+
+goalState = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8]
+]
+
+class PuzzleNode:
+    def __init__(self, parent, board, x, y, cost, level):
+        self.parent = parent
+        self.board = [row[:] for row in board]
+        self.x = x
+        self.y = y
+        self.cost = cost
+        self.level = level
+
+def printBoard(board):
+    for i in range(N):
+        for j in range(N):
+            print(board[i][j], end=" ")
+        print()
+
+def calculateManhattanDistance(board):
+    totalDistance = 0
+
+    for i in range(N):
+        for j in range(N):
+            value = board[i][j]
+
+            if value != 0:
+                goalX, goalY = divmod(goalState[value], N)
+                totalDistance += abs(i - goalX) + abs(j - goalY)
+
+    return totalDistance
+
+def calculateCost(board):
+    return calculateManhattanDistance(board)
+
+def createNode(board, x, y, newX, newY, level, parent):
+    node = PuzzleNode(parent, board, x, y, 0, level)
+
+    temp = node.board[x][y]
+    node.board[x][y] = node.board[newX][newY]
+    node.board[newX][newY] = temp
+
+    node.level = level
+    node.cost = calculateCost(node.board) + node.level
+    node.x = newX
+    node.y = newY
+
+    return node
+
+def isWithinLimits(x, y):
+    return 0 <= x < N and 0 <= y < N
+
+def displaySolution(root):
+    if root is None:
+        return
+    displaySolution(root.parent)
+    printBoard(root.board)
+    print()
+
+class CompareNodes:
+    def __lt__(self, lhs, rhs):
+        return lhs.cost > rhs.cost
+
+def boardToString(board):
+    return "".join(str(cell) for row in board for cell in row)
+
+def solvePuzzle(initial, startX, startY):
+    startTime = time.time()
+
+    pq = []
+    heapq.heapify(pq)
+    visited = set()
+
+    root = createNode(initial, startX, startY, startX, startY, 0, None)
+    heapq.heappush(pq, (root.cost, root))
+
+    while pq:
+        current = heapq.heappop(pq)[1]
+
+        if boardToString(current.board) in visited:
+            continue
+
+        visited.add(boardToString(current.board))
+
+        if calculateManhattanDistance(current.board) == 0:
+            displaySolution(current)
+            print("Total Steps:", current.level)
+            print("Time taken:", time.time() - startTime, "seconds")
+            return
+
+        for i in range(4):
+            newX, newY = current.x + row[i], current.y + col[i]
+
+            if isWithinLimits(newX, newY):
+                newNode = createNode(
+                    current.board, current.x, current.y, newX, newY, current.level + 1, current
+                )
+                heapq.heappush(pq, (newNode.cost, newNode))
+
+if __name__ == "__main__":
+    initial = [
+        [1, 2, 0],
+        [4, 5, 3],
+        [7, 8, 6]
+    ]
+
+    solvePuzzle(initial, 0, 2)
