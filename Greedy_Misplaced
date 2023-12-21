@@ -1,0 +1,123 @@
+import heapq
+from typing import List
+
+# Size of the puzzle
+N = 3
+
+# Structure to represent a state of the puzzle
+class PuzzleState:
+    def __init__(self, board: List[List[int]]):
+        self.board = board
+        self.heuristic = self.calculate_heuristic()
+
+    # Calculate the number of misplaced tiles heuristic
+    def calculate_heuristic(self) -> int:
+        misplaced = 0
+        target_value = 0
+
+        for i in range(N):
+            for j in range(N):
+                if self.board[i][j] != target_value:
+                    misplaced += 1
+                target_value += 1
+
+        return misplaced
+
+    # Check if the current state is the goal state
+    def is_goal(self) -> bool:
+        target_value = 0
+        for i in range(N):
+            for j in range(N):
+                if self.board[i][j] != target_value:
+                    return False
+                target_value += 1
+        return True
+
+    # Check if two puzzle states are equal
+    def __eq__(self, other):
+        return self.board == other.board
+
+    # Hash function for PuzzleState (used for unordered_set)
+    def __hash__(self):
+        hash_value = 0
+        for row in self.board:
+            for val in row:
+                hash_value ^= hash(val) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2)
+        return hash_value
+
+# Compare function for priority_queue
+class ComparePuzzleState:
+    def __lt__(self, lhs, rhs):
+        return lhs.heuristic > rhs.heuristic
+
+# Function to print the puzzle state
+def print_puzzle_state(state: PuzzleState):
+    for row in state.board:
+        print(" ".join(map(str, row)))
+    print(f"Heuristic: {state.heuristic}")
+    print("-----------------")
+
+# Function to perform the greedy search
+def greedy_search(initial: PuzzleState):
+    pq = []
+    heapq.heappush(pq, initial)
+    visited = set()
+
+    while pq:
+        current = heapq.heappop(pq)
+
+        if current.is_goal():
+            print("Goal state reached!")
+            print_puzzle_state(current)
+            return
+
+        if current not in visited:
+            visited.add(current)
+            print_puzzle_state(current)
+
+            # Generate possible next states
+            # In this implementation, only left, right, up, and down moves are considered
+            moves = [-1, 0, 1]
+
+            for dx in moves:
+                for dy in moves:
+                    if abs(dx) + abs(dy) == 1:
+                        new_x, new_y = 0, 0
+
+                        # Find the position of the zero (empty space)
+                        for i in range(N):
+                            for j in range(N):
+                                if current.board[i][j] == 0:
+                                    new_x = i + dx
+                                    new_y = j + dy
+                                    break
+
+                        # Check if the new position is within the bounds
+                        if 0 <= new_x < N and 0 <= new_y < N:
+                            # Create a new state by swapping the zero and the adjacent tile
+                            new_board = [row[:] for row in current.board]
+                            new_board[new_x][new_y], new_board[new_x - dx][new_y - dy] = \
+                                new_board[new_x - dx][new_y - dy], new_board[new_x][new_y]
+
+                            next_state = PuzzleState(new_board)
+
+                            # Add the new state to the priority queue
+                            heapq.heappush(pq, next_state)
+
+    print("Goal state not reachable!")
+
+if __name__ == "__main__":
+    # Initial state
+    initial_state = [
+        [8, 0, 6],
+        [5, 4, 7],
+        [2, 3, 1]
+    ]
+
+    initial_puzzle_state = PuzzleState(initial_state)
+
+    print("Initial state:")
+    print_puzzle_state(initial_puzzle_state)
+
+    print("Starting greedy search with Misplaced Tiles heuristic...")
+    greedy_search(initial_puzzle_state)
